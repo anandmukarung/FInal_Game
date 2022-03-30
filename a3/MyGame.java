@@ -102,6 +102,14 @@ public class MyGame extends VariableFrameRateGame{
     private int fluffyClouds;
     private int lakeIslands;
 
+    private File scriptFile1; 
+    private File scriptFile2;
+    private File scriptFile3;
+
+	private long fileLastModifiedTime = 0;
+
+    ScriptEngine jsEngine;
+
     private Matrix4f behindDolphin = (new Matrix4f()).scaling(0.2f);
 
 	public MyGame() { super(); }
@@ -152,10 +160,6 @@ public class MyGame extends VariableFrameRateGame{
 
 		Matrix4f initialTranslation, initalScale;
         dolphin = new GameObject(GameObject.root(), dolphinShape, dolphinTexture);
-        initialTranslation = (new Matrix4f().translation(0,.7f,0));
-        initalScale = (new Matrix4f()).scaling(3.0f);
-        dolphin.setLocalTranslation(initialTranslation);
-        dolphin.setLocalScale(initalScale);
 
         crate = new GameObject(GameObject.root(), crateShape, crateTexture);
         initialTranslation = (new Matrix4f().translation(0,0,0));
@@ -223,10 +227,29 @@ public class MyGame extends VariableFrameRateGame{
 	public void initializeGame(){
         startTime = System.currentTimeMillis();
 		(engine.getRenderSystem()).setWindowDimensions(1900,1000);
+        //creating jsEngine object
+        ScriptEngineManager factory = new ScriptEngineManager();
+		java.util.List<ScriptEngineFactory> list = factory.getEngineFactories();
+		jsEngine = factory.getEngineByName("js");	
+        //scriptfiles beiong read
+        scriptFile1 = new File("assets/scripts/InitParams.js");
+		this.runScript(scriptFile1);
+        //initlize has to happen in initlize game, so translations, scaling, etc has to be done here
+        dolphin.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("dolphinTranslate"))));
+        //use these as templates for init
+        dolphin.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("dolphinScale"))).floatValue()));
 
-        rc = new RotationController(engine, new Vector3f(0,1,0), 0.001f);
-        rumbleController = new RumbleController(engine, new Vector3f(0,1,0), 0.001f);
-        torpedoController = new TorpedoController(engine, new Vector3f(0,1,0), 0.001f);
+        scriptFile2 = new File("assets/scripts/CreateLight.js");
+		this.runScript(scriptFile2);
+        //object light
+		(engine.getSceneGraph()).addLight((Light)jsEngine.get("light"));
+
+        scriptFile3 = new File("assets/scripts/UpdateLightColor.js");
+		this.runScript(scriptFile3);
+
+        rc = new RotationController(engine, new Vector3f(0,1,0), ((Double)(jsEngine.get("rumble"))).floatValue());
+        rumbleController = new RumbleController(engine, new Vector3f(0,1,0),((Double)(jsEngine.get("rumble"))).floatValue());
+        torpedoController = new TorpedoController(engine, new Vector3f(0,1,0),((Double)(jsEngine.get("rumble"))).floatValue());
         //adding node controllers
         rc.addTarget(prize1);
         rc.addTarget(prize2);
@@ -571,4 +594,23 @@ public class MyGame extends VariableFrameRateGame{
     public float getSpeed(){
         return speed;
     }
+    private void runScript(File scriptFile){
+        try{
+            FileReader fileReader = new FileReader(scriptFile);
+			jsEngine.eval(fileReader);
+			fileReader.close();
+		}
+		catch (FileNotFoundException e1){
+            System.out.println(scriptFile + " not found " + e1);
+        }
+		catch (IOException e2){
+            System.out.println("IO problem with " + scriptFile + e2);
+        }
+		catch (ScriptException e3) {
+            System.out.println("ScriptException in " + scriptFile + e3);
+        }
+		catch (NullPointerException e4){
+            System.out.println ("Null ptr exception reading " + scriptFile + e4);
+		}
+	}
 }
