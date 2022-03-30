@@ -77,6 +77,11 @@ public class MyGame extends VariableFrameRateGame{
     private TextureImage crateTexture;
     private ObjShape crateShape;
     
+    private GameObject terr;
+    private ObjShape terrShape;
+    private TextureImage hills;
+    private TextureImage grass;
+
     private Random rand = new Random();
     private boolean mount = true;
 
@@ -149,6 +154,9 @@ public class MyGame extends VariableFrameRateGame{
         crabCatcherTexture = new TextureImage("crabcatcher.png");
         groundTexture = new TextureImage("seafloor.png");
         crateTexture = new TextureImage("crate.png");
+        hills = new TextureImage("hills.jpg");
+        grass = new TextureImage("grass.jpg");
+        terrShape = new TerrainPlane(1000);
     }
     /**
      * builds the objects in the game 
@@ -212,6 +220,14 @@ public class MyGame extends VariableFrameRateGame{
         initalScale = (new Matrix4f()).scaling((float)(.1 + (1.0 - .1) *  rand.nextFloat()));
         crabCatcher.setLocalTranslation(initialTranslation);
         crabCatcher.setLocalScale(initalScale);
+        //maybe add some terrain for like a garbage dump, doens't make sense for that place tobe an area so probobly
+        //just some background stuff
+        terr = new GameObject(GameObject.root(), terrShape, grass);
+		initialTranslation = (new Matrix4f()).translation(0f,0f,0f);
+		terr.setLocalTranslation(initialTranslation);
+		Matrix4f initialScale = (new Matrix4f()).scaling(20.0f, 1.0f, 20.0f);
+		terr.setLocalScale(initialScale);
+		terr.setHeightMap(hills);
 	}
     @Override
     public void loadSkyBoxes(){
