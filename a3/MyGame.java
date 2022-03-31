@@ -80,7 +80,7 @@ public class MyGame extends VariableFrameRateGame{
     private GameObject terr;
     private ObjShape terrShape;
     private TextureImage hills;
-    private TextureImage grass;
+    private TextureImage trash;
 
     private Random rand = new Random();
     private boolean mount = true;
@@ -155,8 +155,8 @@ public class MyGame extends VariableFrameRateGame{
         groundTexture = new TextureImage("seafloor.png");
         crateTexture = new TextureImage("crate.png");
         hills = new TextureImage("hills.jpg");
-        grass = new TextureImage("grass.jpg");
-        terrShape = new TerrainPlane(1000);
+        trash = new TextureImage("trash.png");
+        terrShape = new TerrainPlane(100);
     }
     /**
      * builds the objects in the game 
@@ -222,11 +222,9 @@ public class MyGame extends VariableFrameRateGame{
         crabCatcher.setLocalScale(initalScale);
         //maybe add some terrain for like a garbage dump, doens't make sense for that place tobe an area so probobly
         //just some background stuff
-        terr = new GameObject(GameObject.root(), terrShape, grass);
+        terr = new GameObject(GameObject.root(), terrShape, trash);
 		initialTranslation = (new Matrix4f()).translation(0f,0f,0f);
 		terr.setLocalTranslation(initialTranslation);
-		Matrix4f initialScale = (new Matrix4f()).scaling(20.0f, 1.0f, 20.0f);
-		terr.setLocalScale(initialScale);
 		terr.setHeightMap(hills);
 	}
     @Override
@@ -255,6 +253,7 @@ public class MyGame extends VariableFrameRateGame{
         //use these as templates for init
         dolphin.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("dolphinScale"))).floatValue()));
 
+        terr.setLocalScale(new Matrix4f().scaling((Vector3fc) (jsEngine.get("garbageScale"))));
         scriptFile2 = new File("assets/scripts/CreateLight.js");
 		this.runScript(scriptFile2);
         //object light
