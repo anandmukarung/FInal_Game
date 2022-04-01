@@ -111,6 +111,10 @@ public class MyGame extends VariableFrameRateGame{
     private File scriptFile2;
     private File scriptFile3;
 
+    private TextureImage GrafTexture;
+    private GameObject Graffiti;
+    private ObjShape graffitiShape;
+
 	private long fileLastModifiedTime = 0;
 
     ScriptEngine jsEngine;
@@ -134,6 +138,7 @@ public class MyGame extends VariableFrameRateGame{
 	@Override
 	public void loadShapes(){
         dolphinShape = new ImportedModel("dolphinHighPoly.obj");
+        graffitiShape = new ImportedModel("graffiti_artist.obj");
         prizeShape = new Cube();
         xAxsisShape = new Line(center, xBorder);
         yAxsisShape = new Line(center, yBorder);
@@ -149,6 +154,7 @@ public class MyGame extends VariableFrameRateGame{
 	@Override
 	public void loadTextures(){
         dolphinTexture = new TextureImage("Dolphin_HighPolyUV.png");
+        GrafTexture = new TextureImage("GraffText.png");
         prizeTexture = new TextureImage("present.png");
         bombTexture = new TextureImage("bombTexture.png");
         crabCatcherTexture = new TextureImage("crabcatcher.png");
@@ -168,6 +174,12 @@ public class MyGame extends VariableFrameRateGame{
 
 		Matrix4f initialTranslation, initalScale;
         dolphin = new GameObject(GameObject.root(), dolphinShape, dolphinTexture);
+
+        Graffiti = new GameObject(GameObject.root(), graffitiShape, GrafTexture);
+        initialTranslation = (new Matrix4f().translation(0,0,0));
+        initalScale = (new Matrix4f()).scaling(10.2f);
+        Graffiti.setLocalTranslation(initialTranslation);
+        Graffiti.setLocalScale(initalScale);
 
         crate = new GameObject(GameObject.root(), crateShape, crateTexture);
         initialTranslation = (new Matrix4f().translation(0,0,0));
