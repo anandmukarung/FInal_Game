@@ -10,5 +10,5 @@ var dolphinScale = 3.0;
 var groundScale = 100.0;
 with (JavaPackages){
 	var dolphinTranslate = new Vector3f(0.0, 0.7, 0.0);
-	var garbageScale = new Vector3f(25.0, 5.0, 25.0);
+	var garbageScale = new Vector3f(1.0, 1.0, 1.0);
 }
