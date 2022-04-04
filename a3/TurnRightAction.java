@@ -15,14 +15,8 @@ import org.joml.*;
  */
 public class TurnRightAction extends AbstractInputAction{
 	private MyGame game;
-	private GameObject dolphin;
-	private Vector3f cameraLocationOnDismount;
-	private Camera camera;
-	private Vector3f loc;
-	private Vector3f fwd;
-    private Vector3f newLocation;
+	private GameObject player;
 	private char key = 'k';
-	private String gpName;
 	/**
 	 * constuctor for gamepad input
 	 * @param g game object
@@ -45,7 +39,7 @@ public class TurnRightAction extends AbstractInputAction{
 	 */
 	@Override
 	public void performAction(float time, Event e){	
-		dolphin = game.getDolphin();
-		dolphin.yaw('r');
+		player = game.getPlayer();
+		player.yaw('r');
 	}
 }

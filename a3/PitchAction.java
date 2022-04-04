@@ -1,4 +1,4 @@
-package a3; 
+package a3;
 
 import tage.*;
 import tage.input.action.AbstractInputAction;
@@ -11,7 +11,7 @@ import org.joml.*;
 public class PitchAction extends AbstractInputAction
 {
 	private MyGame game;
-	private GameObject dolphin;
+	private GameObject player;
 	private Vector3f cameraLocationOnDismount;
 	private Camera camera;
 	private Vector3f loc;
@@ -28,45 +28,21 @@ public class PitchAction extends AbstractInputAction
 	}
 	@Override
 	public void performAction(float time, Event e){
-
+		player = game.getPlayer();
 		if(key == 'u'){
-			if(game.getMount()){
-				dolphin.pitch('u');
-			}
-			else{
-				game.getEngine().getRenderSystem().getViewport("MAIN").getCamera().pitch('u');
-			}
+			player.pitch('d');
 			return;
 		}
 		else if(key == 'd'){
-			if(game.getMount()){
-				dolphin.pitch('d');
-			}
-			else{
-				game.getEngine().getRenderSystem().getViewport("MAIN").getCamera().pitch('d');
-			}
-			return;
+			player.pitch('d');
 		}
-		camera = game.getEngine().getRenderSystem().getViewport("MAIN").getCamera();
-		dolphin = game.getDolphin();
 		float keyValue = e.getValue();
 		if (keyValue > -.2 && keyValue < .2) return;
 		if(e.getValue() < +.5){
-            if(game.getMount()){
-				dolphin.pitch('u');
-			}
-			else{
-				game.getEngine().getRenderSystem().getViewport("MAIN").getCamera().pitch('u');
-			}
+			player.pitch('u');
         }
-			
 		else if(e.getValue() > -.5){
-            if(game.getMount()){
-				dolphin.pitch('d');
-			}
-			else{
-				game.getEngine().getRenderSystem().getViewport("MAIN").getCamera().pitch('d');
-			}
+			player.pitch('d');
         }	
 	}
 }

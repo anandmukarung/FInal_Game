@@ -1,10 +1,10 @@
-package a3; 
+package a3;
 
 import tage.*;
 import tage.input.InputManager;
+import tage.input.action.AbstractInputAction;
 import tage.shapes.*;
 import tage.nodeControllers.*;
-import tage.CameraOrbit3D;
 
 import java.lang.Math;
 import java.lang.ModuleLayer.Controller;
@@ -14,6 +14,19 @@ import java.awt.event.*;
 import java.io.*;
 import javax.swing.*;
 import org.joml.*;
+
+import java.io.*;
+import java.util.*;
+import java.util.UUID;
+import java.net.InetAddress;
+
+import java.net.UnknownHostException;
+
+import org.joml.*;
+
+import net.java.games.input.*;
+import net.java.games.input.Component.Identifier.*;
+import tage.networking.IGameConnection.ProtocolType;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
@@ -38,19 +51,8 @@ public class MyGame extends VariableFrameRateGame{
 	public static Engine getEngine() { return engine; }
 
 	private double startTime;
-    private GameObject dolphin;
-    private ObjShape dolphinShape;
-    private TextureImage dolphinTexture;
     private Light light1;
 
-    private GameObject prize1;
-    private GameObject prize2;
-    private GameObject prize3;
-    private ObjShape prizeShape;
-    private TextureImage prizeTexture;
-    private GameObject crabCatcher;
-    private ObjShape crabCatcherShape;
-    private TextureImage crabCatcherTexture;
 
     private GameObject ground;
     private Plane groundPlane;
@@ -69,27 +71,15 @@ public class MyGame extends VariableFrameRateGame{
     private GameObject yAxsis;
     private GameObject zAxsis;
     
-    private GameObject bomb;
-    private TextureImage bombTexture;
-    private ObjShape bombShape;
-
-    private GameObject crate;
-    private TextureImage crateTexture;
-    private ObjShape crateShape;
-    
     private GameObject terr;
     private ObjShape terrShape;
     private TextureImage hills;
     private TextureImage trash;
 
-    private Random rand = new Random();
-    private boolean mount = true;
-
     private boolean invisbleAxis = false;
 
     private Camera camera;
     private Camera HudCamera;
-    private CameraOrbit3D orbit;
     private int score = 0;
 
     private long previousTime = 0;
@@ -101,11 +91,8 @@ public class MyGame extends VariableFrameRateGame{
     private float speed = 0.0f;
     private float zoomPan = 0.0f;
 	private NodeController rc;
-    private NodeController rumbleController;
-    private NodeController torpedoController;
 
     private int fluffyClouds;
-    private int lakeIslands;
 
     private File scriptFile1; 
     private File scriptFile2;
@@ -115,19 +102,41 @@ public class MyGame extends VariableFrameRateGame{
     private GameObject Graffiti;
     private ObjShape graffitiShape;
 
+    private GhostManager ghostManager;
+
+    private ObjShape ghostShape;
+    private TextureImage ghostTexture; 
+
+    private String serverAddress;
+    private int serverPort;
+    private ProtocolType serverProtocol;
+    private ProtocolClient protocolClient;
+    private boolean isClientConnected = false;
+
 	private long fileLastModifiedTime = 0;
 
     ScriptEngine jsEngine;
 
-    private Matrix4f behindDolphin = (new Matrix4f()).scaling(0.2f);
+    private Matrix4f behindPlayer = (new Matrix4f()).scaling(0.2f);
 
-	public MyGame() { super(); }
+	public MyGame(String serverAddress, int serverPort, String protocol) { 
+        super(); 
+        ghostManager = new GhostManager(this);
+        this.serverAddress = serverAddress;
+        this.serverPort = serverPort;
+        if(protocol.toUpperCase().compareTo("TCP") == 0){
+            this.serverProtocol = ProtocolType.TCP;
+        }
+        else{
+            this.serverProtocol = ProtocolType.UDP;
+        }
+    }
     /**
      * main method
      * @param args
      */
 	public static void main(String[] args){
-        MyGame game = new MyGame();
+        MyGame game = new MyGame(args[0], Integer.parseInt(args[1]), args[2]);
 		engine = new Engine(game);
 		game.initializeSystem();
 		game.game_loop();
@@ -137,29 +146,22 @@ public class MyGame extends VariableFrameRateGame{
      */
 	@Override
 	public void loadShapes(){
-        dolphinShape = new ImportedModel("dolphinHighPoly.obj");
         graffitiShape = new ImportedModel("graffiti_artist.obj");
-        prizeShape = new Cube();
+        ghostShape = new ImportedModel("graffiti_artist.obj");
+        hills = new TextureImage("hills.jpg");
         xAxsisShape = new Line(center, xBorder);
         yAxsisShape = new Line(center, yBorder);
         zAxsisShape = new Line(center, zBorder);
-        bombShape =  new Torpedo();
-        crabCatcherShape = new Cube();
         groundPlane = new Plane();
-        crateShape = new Cube();
 	}
     /**
      * loads all the textures into the texture variables
      */
 	@Override
 	public void loadTextures(){
-        dolphinTexture = new TextureImage("Dolphin_HighPolyUV.png");
         GrafTexture = new TextureImage("GraffText.png");
-        prizeTexture = new TextureImage("present.png");
-        bombTexture = new TextureImage("bombTexture.png");
-        crabCatcherTexture = new TextureImage("crabcatcher.png");
         groundTexture = new TextureImage("seafloor.png");
-        crateTexture = new TextureImage("crate.png");
+        ghostTexture = new TextureImage("GraffText.png");
         hills = new TextureImage("hills.jpg");
         trash = new TextureImage("trash.png");
         terrShape = new TerrainPlane(100);
@@ -173,7 +175,6 @@ public class MyGame extends VariableFrameRateGame{
 	public void buildObjects(){
 
 		Matrix4f initialTranslation, initalScale;
-        dolphin = new GameObject(GameObject.root(), dolphinShape, dolphinTexture);
 
         Graffiti = new GameObject(GameObject.root(), graffitiShape, GrafTexture);
         initialTranslation = (new Matrix4f().translation(0,0,0));
@@ -181,57 +182,16 @@ public class MyGame extends VariableFrameRateGame{
         Graffiti.setLocalTranslation(initialTranslation);
         Graffiti.setLocalScale(initalScale);
 
-        crate = new GameObject(GameObject.root(), crateShape, crateTexture);
-        initialTranslation = (new Matrix4f().translation(0,0,0));
-        initalScale = (new Matrix4f()).scaling(.2f);
-        crate.setLocalTranslation(initialTranslation);
-        crate.setLocalScale(initalScale);
-
         ground = new GameObject(GameObject.root(), groundPlane, groundTexture);
         initialTranslation = (new Matrix4f().translation(0,0,0));
         initalScale = (new Matrix4f()).scaling(100.f);
         ground.setLocalTranslation(initialTranslation);
         ground.setLocalScale(initalScale);
 
-        prize1 = new GameObject(GameObject.root(), prizeShape, prizeTexture);
-        initialTranslation= (new Matrix4f().translation((float)(1 + (10.0 - 1) * 
-            rand.nextFloat()),1,(float)(1 + (10.0 - 1) * rand.nextFloat())));
-        initalScale = (new Matrix4f()).scaling((float)(.1 + (2.0 - .1) * rand.nextFloat()));
-        prize1.setLocalTranslation(initialTranslation);
-        prize1.setLocalScale(initalScale);
-        
-        prize2 = new GameObject(GameObject.root(), prizeShape, prizeTexture);
-        initialTranslation= (new Matrix4f().translation((float)(2 + (10.0 - 2) * 
-            rand.nextFloat()), 1 ,(float)(2 + (10.0 - 2) * rand.nextFloat())));
-        initalScale = (new Matrix4f()).scaling((float)(.1 + (2.0 - .1) * rand.nextFloat()));
-        prize2.setLocalTranslation(initialTranslation);
-        prize2.setLocalScale(initalScale);
-        
-        prize3 = new GameObject(GameObject.root(), prizeShape, prizeTexture);
-        initialTranslation= (new Matrix4f().translation((float)(2 + (10.0 - 2) * 
-            rand.nextFloat()),1,(float)(2 + (10.0 - 2) * rand.nextFloat())));
-        initalScale = (new Matrix4f()).scaling((float)(.1 + (2.0 - .1) *  rand.nextFloat()));
-        prize3.setLocalTranslation(initialTranslation);
-        prize3.setLocalScale(initalScale);
-        
-        xAxsis = new GameObject(GameObject.root(), xAxsisShape, prizeTexture );
-        yAxsis = new GameObject(GameObject.root(), yAxsisShape, prizeTexture );
-        zAxsis = new GameObject(GameObject.root(), zAxsisShape, prizeTexture );
-        //bomb translation is a little different than the prizes so the game doesn't start
-        // in a gameover
-        bomb = new GameObject(GameObject.root(), bombShape, bombTexture);
-        initialTranslation= (new Matrix4f().translation((float)(2.0 + (10.0 - 2.0) * 
-            rand.nextFloat()),1,(float)(2.0 + (10.0 - 2.0) * rand.nextFloat())));
-        initalScale = (new Matrix4f()).scaling((float)(.1 + (1.0 - .1) *  rand.nextFloat()));
-        bomb.setLocalTranslation(initialTranslation);
-        bomb.setLocalScale(initalScale);
+        xAxsis = new GameObject(GameObject.root(), xAxsisShape, trash );
+        yAxsis = new GameObject(GameObject.root(), yAxsisShape, trash );
+        zAxsis = new GameObject(GameObject.root(), zAxsisShape, trash );
 
-        crabCatcher = new GameObject(GameObject.root(), crabCatcherShape, crabCatcherTexture);
-        initialTranslation= (new Matrix4f().translation((float)(2 + (10.0 - 2) * 
-            rand.nextFloat()),1,(float)(2 + (10.0 - 2) * rand.nextFloat())));
-        initalScale = (new Matrix4f()).scaling((float)(.1 + (1.0 - .1) *  rand.nextFloat()));
-        crabCatcher.setLocalTranslation(initialTranslation);
-        crabCatcher.setLocalScale(initalScale);
         //maybe add some terrain for like a garbage dump, doens't make sense for that place tobe an area so probobly
         //just some background stuff
         terr = new GameObject(GameObject.root(), terrShape, trash);
@@ -242,7 +202,6 @@ public class MyGame extends VariableFrameRateGame{
     @Override
     public void loadSkyBoxes(){
         fluffyClouds = (engine.getSceneGraph()).loadCubeMap("fluffyClouds");
-		lakeIslands = (engine.getSceneGraph()).loadCubeMap("lakeIslands");
 		(engine.getSceneGraph()).setActiveSkyBoxTexture(fluffyClouds);
 		(engine.getSceneGraph()).setSkyBoxEnabled(true);
     }
@@ -261,9 +220,9 @@ public class MyGame extends VariableFrameRateGame{
         scriptFile1 = new File("assets/scripts/InitParams.js");
 		this.runScript(scriptFile1);
         //initlize has to happen in initlize game, so translations, scaling, etc has to be done here
-        dolphin.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("dolphinTranslate"))));
+        Graffiti.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("dolphinTranslate"))));
         //use these as templates for init
-        dolphin.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("dolphinScale"))).floatValue()));
+        Graffiti.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("dolphinScale"))).floatValue()));
 
         terr.setLocalScale(new Matrix4f().scaling((Vector3fc) (jsEngine.get("garbageScale"))));
         scriptFile2 = new File("assets/scripts/CreateLight.js");
@@ -275,19 +234,7 @@ public class MyGame extends VariableFrameRateGame{
 		this.runScript(scriptFile3);
 
         rc = new RotationController(engine, new Vector3f(0,1,0), ((Double)(jsEngine.get("rumble"))).floatValue());
-        rumbleController = new RumbleController(engine, new Vector3f(0,1,0),((Double)(jsEngine.get("rumble"))).floatValue());
-        torpedoController = new TorpedoController(engine, new Vector3f(0,1,0),((Double)(jsEngine.get("rumble"))).floatValue());
-        //adding node controllers
-        rc.addTarget(prize1);
-        rc.addTarget(prize2);
-        rc.addTarget(prize3);
-        rumbleController.addTarget(crabCatcher);
-        torpedoController.addTarget(bomb);
-        torpedoController.enable();
-        rumbleController.enable();
         rc.enable();
-        (engine.getSceneGraph()).addNodeController(torpedoController);
-        (engine.getSceneGraph()).addNodeController(rumbleController);
         (engine.getSceneGraph()).addNodeController(rc);
 
 
@@ -367,7 +314,7 @@ public class MyGame extends VariableFrameRateGame{
                     viewPort2, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
             }
         }
-        orbit = new CameraOrbit3D(camera, dolphin, engine, this);
+        setupNetworking();
     }
     /**
      *creating the viewports 
@@ -405,26 +352,16 @@ public class MyGame extends VariableFrameRateGame{
 		    int elapsTimeSec = Math.round((float)(System.currentTimeMillis()-startTime)/1000.0f);
             String elapsTimeStr = Integer.toString(elapsTimeSec);
             String dispStr1 = "Time = " + elapsTimeStr + "Score = " + score;
-            String dispStr2 = "dolphin " + dolphin.getWorldLocation() + "camera" + camera.getLocation();
+            String dispStr2 = "p1 " + Graffiti.getWorldLocation() + "camera" + camera.getLocation();
             Vector3f hud1Color = new Vector3f(1,1,1);
             Vector3f hud2Color = new Vector3f(0,0,1);
-            Vector3f hudCameraVector = dolphin.getLocalLocation();
+            Vector3f hudCameraVector = Graffiti.getLocalLocation();
             (engine.getHUDmanager()).setHUD1(dispStr1, hud1Color, 15, 15);
             (engine.getHUDmanager()).setHUD2(dispStr2, hud2Color, 1000, 275);
             hudCameraVector.y = hudCameraVector.y + 2.5f + zoomPan;
             HudCamera.setLocation(hudCameraVector);
             inputManager.update((float)elaspedTime);
-            bombDetection();
-            prizeDetection();
-            propagateTranslation();
-            crateCollision();
-            if(crabCatcherCollision(crabCatcher)){
-                speed = speed + 0.05f;
-                crabCatcher.setLocalTranslation( 
-                    (new Matrix4f().translation((float)(50 + (100.0 - 50) * rand.nextFloat()), 10000 ,
-                        (float)(50 + (100 - 50) * rand.nextFloat()))));
-
-            }
+            processNetworking((float)elaspedTime);
         }
         previousTime = System.currentTimeMillis();
 	}
@@ -438,128 +375,6 @@ public class MyGame extends VariableFrameRateGame{
         }
         else if(zoomPanCommand == 'd'){
             zoomPan = zoomPan - .5f;
-        }
-    }
-    /**
-     * checks to see if the dolphin has any prizes, and sets the new parent and score if that is the case
-     */
-    private void crateCollision(){
-        float crateX = crate.getWorldLocation().x();
-        float crateY = crate.getWorldLocation().y();
-        float crateZ = crate.getWorldLocation().z();
-        if(Math.abs(dolphin.getWorldLocation().x() - crateX)< 0.5f &&  
-            Math.abs(dolphin.getWorldLocation().z() - crateZ) < 0.5f){
-            //only scores if the dolphin child is prize
-            if(prize1.getParent() == dolphin){
-                prize1.setParent(bomb);
-                prize1.setLocalTranslation(new Matrix4f().translation((float)(1 + (10.0 - 1) * 
-                rand.nextFloat()),-1,(float)(1 + (10.0 - 1) * rand.nextFloat())));
-                score = score + 10;
-            }
-            if(prize2.getParent() == dolphin){
-                prize2.setParent(bomb);
-                prize2.setLocalTranslation(new Matrix4f().translation((float)(1 + (10.0 - 1) * 
-                rand.nextFloat()),-1,(float)(1 + (10.0 - 1) * rand.nextFloat())));
-                score = score + 10;
-            }
-            if(prize3.getParent() == dolphin){
-                prize3.setParent(bomb);
-                prize3.setLocalTranslation(new Matrix4f().translation((float)(1 + (10.0 - 1) * 
-                rand.nextFloat()),-1,(float)(1 + (10.0 - 1) * rand.nextFloat())));
-                score = score + 10;
-            }
-        }
-    }
-    /**
-     * detects if the player has touched a bomb
-     * The game is over if the player touchs the bomb
-     */
-    private void bombDetection(){
-        float bombX = bomb.getWorldLocation().x();
-        float bombY = bomb.getWorldLocation().y();
-        float bombZ = bomb.getWorldLocation().z();
-        if(Math.abs(dolphin.getWorldLocation().x() - bombX)< 0.5f && 
-            Math.abs(dolphin.getWorldLocation().y() - bombY) < 0.5f && 
-                Math.abs(dolphin.getWorldLocation().z() - bombZ) < 0.5f){
-                    (engine.getHUDmanager()).setHUD2("Game Over!", new Vector3f(0,1,0), 500, 15);
-                    System.exit(0);
-        }
-    }
-    /**
-     * checks to see if the player has collided with the crab catcher
-     * @param crabCatcher gameObject for crab Catcher object
-     * @return if the player has collided with the crab catcher
-     */
-    private boolean crabCatcherCollision(GameObject crabCatcher){
-        float crabX = crabCatcher.getWorldLocation().x();
-        float crabY = crabCatcher.getWorldLocation().y();
-        float crabZ = crabCatcher.getWorldLocation().z();
-        if(Math.abs(dolphin.getWorldLocation().x() - crabX)< 1.5f && 
-            Math.abs(dolphin.getWorldLocation().y() - crabY) < 1.5f && 
-            Math.abs(dolphin.getWorldLocation().z() - crabZ) < 1.5f){
-                return true;
-        }
-        return false;
-    }
-    /**
-     * detects if one of the prizes has a collision with the camera
-    */
-    private boolean prizeCollision(GameObject prize){
-        float prizeX = prize.getWorldLocation().x();
-        float prizeY = prize.getWorldLocation().y();
-        float prizeZ = prize.getWorldLocation().z();
-        if(Math.abs(dolphin.getWorldLocation().x() - prizeX)< 1.5f && 
-            Math.abs(dolphin.getWorldLocation().y() - prizeY) < 1.5f && 
-            Math.abs(dolphin.getWorldLocation().z()-prizeZ) < 1.5f){
-                return true;
-        }
-        return false;
-    }
-    /**
-     * employs pizeCollision() to return wether or not the camera has touched the present
-     * if it does it adds to your score and moves the present to a different area
-     */
-    private void prizeDetection(){
-        if(prizeCollision(prize1)){
-            score++;
-            prize1.setParent(dolphin);
-            prize1.setLocalScale(behindDolphin);
-        }
-        else if(prizeCollision(prize2)){
-            score++;
-            prize2.setParent(dolphin);
-            prize2.setLocalScale(behindDolphin);
-        }
-        else if(prizeCollision(prize3)){
-            score++;
-            prize3.setParent(dolphin);
-            prize3.setLocalScale(behindDolphin);
-        }
-    }
-    /**
-     * propagates the prizes around the dolphin
-     */
-    private void propagateTranslation(){
-        Vector3f progagatingPresents = dolphin.getWorldLocation();
-        float distanceChecker = progagatingPresents.x;
-        distanceChecker = (distanceChecker + 0.2f) - distanceChecker;
-        if(prize1.getParent() == dolphin){
-            if(distanceChecker > 0.1f ){
-                return;
-            }
-            prize1.setLocalLocation(progagatingPresents);
-        }
-        if(prize2.getParent() == dolphin){
-            if(distanceChecker > 0.1f ){
-                return;
-            }
-            prize2.setLocalLocation(progagatingPresents);
-        }
-        if(prize3.getParent() == dolphin){
-            if(distanceChecker > 0.1f ){
-                return;
-            }
-            prize3.setLocalLocation(progagatingPresents);
         }
     }
     /**
@@ -594,11 +409,11 @@ public class MyGame extends VariableFrameRateGame{
         return false;
     }
     /**
-     * get Dolphin gets Dolphin and returns it
+     * getPlayer gets player and returns it
      * @return dolphin
      */
-    public GameObject getDolphin(){
-        return dolphin;
+    public GameObject getPlayer(){
+        return Graffiti;
     }
     /**
      * gets Game Camera and returns it
@@ -606,13 +421,6 @@ public class MyGame extends VariableFrameRateGame{
      */
     public Camera getCamera(){
         return camera; 
-    }
-    /**
-     * returns wether the character is mounted or not
-     * @return mount
-     */
-    public boolean getMount(){
-        return mount;
     }
     /**
      * returns speed
@@ -638,6 +446,54 @@ public class MyGame extends VariableFrameRateGame{
         }
 		catch (NullPointerException e4){
             System.out.println ("Null ptr exception reading " + scriptFile + e4);
+		}
+	}
+    public ObjShape getGhostShape() { 
+        return ghostShape;
+    }
+	public TextureImage getGhostTexture() {
+        return ghostTexture;
+    }
+	public GhostManager getGhostManager() {
+        return ghostManager; 
+    }
+	private void setupNetworking(){	
+        isClientConnected = false;	
+		try {	
+            protocolClient = new ProtocolClient(InetAddress.getByName(serverAddress), serverPort, serverProtocol, this);
+		} 	
+        catch (UnknownHostException e) {	
+            e.printStackTrace();
+		}	
+        catch (IOException e) {
+            e.printStackTrace();
+		}
+		if (protocolClient == null){
+            System.out.println("missing protocol host");
+		}
+		else{
+            // Send the initial join message with a unique identifier for this client
+			System.out.println("sending join message to protocol host");
+			protocolClient.sendJoinMessage();
+		}
+	}
+	
+	protected void processNetworking(float elapsTime)
+	{	// Process packets received by the client from the server
+		if (protocolClient != null)
+        protocolClient.processPackets();
+	}
+
+	public Vector3f getPlayerPosition() { return Graffiti.getWorldLocation(); }
+
+	public void setIsConnected(boolean value) { this.isClientConnected = value; }
+	
+	private class SendCloseConnectionPacketAction extends AbstractInputAction
+	{	@Override
+		public void performAction(float time, net.java.games.input.Event evt) 
+		{	if(protocolClient != null && isClientConnected == true)
+			{	protocolClient.sendByeMessage();
+			}
 		}
 	}
 }

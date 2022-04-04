@@ -7,7 +7,7 @@ import org.joml.*;
 
 public class ForwardAction extends AbstractInputAction{
 	private MyGame game;
-	private GameObject dolphin;
+	private GameObject player;
 	private Vector3f fwd, loc, newLocation;
 	private Vector4f fwdDirection;
 
@@ -16,10 +16,10 @@ public class ForwardAction extends AbstractInputAction{
 
 	@Override
 	public void performAction(float time, Event e){	
-    	dolphin = game.getDolphin();
-		fwd = dolphin.getWorldForwardVector();
-		loc = dolphin.getWorldLocation();
+    	player = game.getPlayer();
+		fwd = player.getWorldForwardVector();
+		loc = player.getWorldLocation();
 		newLocation = loc.add(fwd.mul(.08f + game.getSpeed()));
-		dolphin.setLocalLocation(newLocation);
+		player.setLocalLocation(newLocation);
 	}
 }
