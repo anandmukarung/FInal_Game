@@ -24,6 +24,8 @@ import java.net.UnknownHostException;
 
 import org.joml.*;
 
+import tage.CameraOrbit3D;
+
 import net.java.games.input.*;
 import net.java.games.input.Component.Identifier.*;
 import tage.networking.IGameConnection.ProtocolType;
@@ -80,6 +82,7 @@ public class MyGame extends VariableFrameRateGame{
 
     private Camera camera;
     private Camera HudCamera;
+    private CameraOrbit3D orbit;
     private int score = 0;
 
     private long previousTime = 0;
@@ -101,6 +104,20 @@ public class MyGame extends VariableFrameRateGame{
     private TextureImage GrafTexture;
     private GameObject Graffiti;
     private ObjShape graffitiShape;
+
+    private TextureImage streetlightTexture;
+    private GameObject streetlight;
+    private ObjShape streetlightShape;
+
+    private TextureImage buildingTexture;
+    private GameObject building1;
+    private GameObject building2;
+    private GameObject building3;
+    private ObjShape buildingShape;
+
+    private TextureImage garbageFenceTexure;
+    private GameObject garbageFence;
+    private ObjShape garbageFenceShape;
 
     private GhostManager ghostManager;
 
@@ -149,10 +166,13 @@ public class MyGame extends VariableFrameRateGame{
         graffitiShape = new ImportedModel("graffiti_artist.obj");
         ghostShape = new ImportedModel("graffiti_artist.obj");
         hills = new TextureImage("hills.jpg");
+        streetlightShape = new ImportedModel("streetlight.obj");
         xAxsisShape = new Line(center, xBorder);
         yAxsisShape = new Line(center, yBorder);
         zAxsisShape = new Line(center, zBorder);
         groundPlane = new Plane();
+        buildingShape = new Cube();
+        garbageFenceShape = new Cube();
 	}
     /**
      * loads all the textures into the texture variables
@@ -160,11 +180,14 @@ public class MyGame extends VariableFrameRateGame{
 	@Override
 	public void loadTextures(){
         GrafTexture = new TextureImage("GraffText.png");
-        groundTexture = new TextureImage("seafloor.png");
+        groundTexture = new TextureImage("street.png");
         ghostTexture = new TextureImage("GraffText.png");
+        streetlightTexture = new TextureImage("streetlight.png");
         hills = new TextureImage("hills.jpg");
         trash = new TextureImage("trash.png");
         terrShape = new TerrainPlane(100);
+        buildingTexture = new TextureImage("street.png");
+        garbageFenceTexure = new TextureImage("garbageFence.png");
     }
     /**
      * builds the objects in the game 
@@ -182,15 +205,42 @@ public class MyGame extends VariableFrameRateGame{
         Graffiti.setLocalTranslation(initialTranslation);
         Graffiti.setLocalScale(initalScale);
 
+
+        streetlight = new GameObject(GameObject.root(),streetlightShape,streetlightTexture);
+        initialTranslation = (new Matrix4f().translation(0,0,0));
+        initalScale = (new Matrix4f()).scaling(10.2f);
+        streetlight.setLocalTranslation(initialTranslation);
+        streetlight.setLocalScale(initalScale);
+
         ground = new GameObject(GameObject.root(), groundPlane, groundTexture);
         initialTranslation = (new Matrix4f().translation(0,0,0));
         initalScale = (new Matrix4f()).scaling(100.f);
         ground.setLocalTranslation(initialTranslation);
         ground.setLocalScale(initalScale);
 
+        building1 = new GameObject(GameObject.root(), buildingShape, buildingTexture);
+        initialTranslation = (new Matrix4f().translation(0,0,0));
+        initalScale = (new Matrix4f()).scaling(100.f);
+        building1.setLocalTranslation(initialTranslation);
+        building1.setLocalScale(initalScale);
+
+        building2 = new GameObject(GameObject.root(), buildingShape, buildingTexture);
+        initialTranslation = (new Matrix4f().translation(0,0,0));
+        initalScale = (new Matrix4f()).scaling(100.f);
+        building2.setLocalTranslation(initialTranslation);
+        building2.setLocalScale(initalScale);
+
+        building3 = new GameObject(GameObject.root(), buildingShape, buildingTexture);
+        initialTranslation = (new Matrix4f().translation(0,0,0));
+        initalScale = (new Matrix4f()).scaling(100.f);
+        building3.setLocalTranslation(initialTranslation);
+        building3.setLocalScale(initalScale);
+
         xAxsis = new GameObject(GameObject.root(), xAxsisShape, trash );
         yAxsis = new GameObject(GameObject.root(), yAxsisShape, trash );
         zAxsis = new GameObject(GameObject.root(), zAxsisShape, trash );
+        
+        //make garbage fence obj
 
         //maybe add some terrain for like a garbage dump, doens't make sense for that place tobe an area so probobly
         //just some background stuff
@@ -201,7 +251,7 @@ public class MyGame extends VariableFrameRateGame{
 	}
     @Override
     public void loadSkyBoxes(){
-        fluffyClouds = (engine.getSceneGraph()).loadCubeMap("StormClouds");
+        fluffyClouds = (engine.getSceneGraph()).loadCubeMap("night");
 		(engine.getSceneGraph()).setActiveSkyBoxTexture(fluffyClouds);
 		(engine.getSceneGraph()).setSkyBoxEnabled(true);
     }
@@ -224,7 +274,25 @@ public class MyGame extends VariableFrameRateGame{
         //use these as templates for init
         Graffiti.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("dolphinScale"))).floatValue()));
 
+        streetlight.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("streetlightTranslate"))));
+        streetlight.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("streetlightScale"))).floatValue()));
+
         terr.setLocalScale(new Matrix4f().scaling((Vector3fc) (jsEngine.get("garbageScale"))));
+        terr.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("garbageTranslate"))));
+
+        //garbageFence.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("building1"))).floatValue()));
+        //garbageFence.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("garbageTranslate"))));
+
+        
+        building1.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("buildingScale"))).floatValue()));
+        building1.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("buidling1"))));
+
+        building2.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("buildingScale"))).floatValue()));
+        building2.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("buidling2"))));
+
+        building3.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("buildingScale"))).floatValue()));
+        building3.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("buidling3"))));
+
         scriptFile2 = new File("assets/scripts/CreateLight.js");
 		this.runScript(scriptFile2);
         //object light
@@ -249,7 +317,7 @@ public class MyGame extends VariableFrameRateGame{
 
 
 		// ------------- positioning the camera -------------
-		(engine.getRenderSystem().getViewport("LEFT").getCamera()).setLocation(new Vector3f(0,1,5));
+		(engine.getRenderSystem().getViewport("LEFT").getCamera()).setLocation(new Vector3f(0,20,5));
         camera = engine.getRenderSystem().getViewport("LEFT").getCamera();
         HudCamera = engine.getRenderSystem().getViewport("RIGHT").getCamera();
 
@@ -315,6 +383,7 @@ public class MyGame extends VariableFrameRateGame{
             }
         }
         setupNetworking();
+        orbit = new CameraOrbit3D(camera, Graffiti, engine, this);
     }
     /**
      *creating the viewports 
