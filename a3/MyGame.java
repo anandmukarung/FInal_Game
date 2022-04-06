@@ -115,6 +115,10 @@ public class MyGame extends VariableFrameRateGame{
     private GameObject building3;
     private ObjShape buildingShape;
 
+    private TextureImage cityTexture;
+    private GameObject city;
+    private ObjShape cityShape;
+
     private TextureImage garbageFenceTexure;
     private GameObject garbageFence;
     private ObjShape garbageFenceShape;
@@ -173,6 +177,7 @@ public class MyGame extends VariableFrameRateGame{
         groundPlane = new Plane();
         buildingShape = new Cube();
         garbageFenceShape = new Cube();
+        cityShape = new ImportedModel("city.obj");
 	}
     /**
      * loads all the textures into the texture variables
@@ -188,6 +193,7 @@ public class MyGame extends VariableFrameRateGame{
         terrShape = new TerrainPlane(100);
         buildingTexture = new TextureImage("street.png");
         garbageFenceTexure = new TextureImage("garbageFence.png");
+        cityTexture = new TextureImage("city.png");
     }
     /**
      * builds the objects in the game 
@@ -239,6 +245,12 @@ public class MyGame extends VariableFrameRateGame{
         xAxsis = new GameObject(GameObject.root(), xAxsisShape, trash );
         yAxsis = new GameObject(GameObject.root(), yAxsisShape, trash );
         zAxsis = new GameObject(GameObject.root(), zAxsisShape, trash );
+
+        city = new GameObject(GameObject.root(), cityShape, cityTexture);
+        initialTranslation = (new Matrix4f().translation(0,0,0));
+        initalScale = (new Matrix4f()).scaling(100.f);
+        city.setLocalTranslation(initialTranslation);
+        city.setLocalScale(initalScale);
         
         //make garbage fence obj
 
@@ -280,6 +292,7 @@ public class MyGame extends VariableFrameRateGame{
         terr.setLocalScale(new Matrix4f().scaling((Vector3fc) (jsEngine.get("garbageScale"))));
         terr.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("garbageTranslate"))));
 
+        ground.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("groundScale"))).floatValue()));
         //garbageFence.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("building1"))).floatValue()));
         //garbageFence.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("garbageTranslate"))));
 
@@ -292,6 +305,9 @@ public class MyGame extends VariableFrameRateGame{
 
         building3.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("buildingScale"))).floatValue()));
         building3.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("buidling3"))));
+
+        city.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("cityScale"))).floatValue()));
+        city.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("cityTranslation"))));
 
         scriptFile2 = new File("assets/scripts/CreateLight.js");
 		this.runScript(scriptFile2);
