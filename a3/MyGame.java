@@ -149,6 +149,14 @@ public class MyGame extends VariableFrameRateGame{
     private ProtocolClient protocolClient;
     private boolean isClientConnected = false;
 
+    private PhysicsEngine physicsEngine;
+    private PhysicsObject Graff;
+    private PhysicsObject Jani;
+    private PhysicsObject Gaurd;
+    private PhysicsObject groundPlaneP;
+    private boolean running = false;
+    private float vals[] = new float [16];
+
 	private long fileLastModifiedTime = 0;
 
     ScriptEngine jsEngine;
@@ -438,6 +446,40 @@ public class MyGame extends VariableFrameRateGame{
         }
         setupNetworking();
         orbit = new CameraOrbit3D(camera, Graffiti, engine, this);
+
+        String engine = "tage.physics.JBullet.JBulletPhysicsEngine";
+		float[] gravity = {0f, -5f, 0f};
+		physicsEngine = PhysicsEngineFactory.createPhysicsEngine(engine);
+		physicsEngine.initSystem();
+		physicsEngine.setGravity(gravity);
+
+        float mass = 1.0f;
+		float up[] = {0,1,0};
+		double[] tempTransform;
+		
+		Matrix4f translation = new Matrix4f(Graffiti.getLocalTranslation());
+		tempTransform = toDoubleArray(translation.get(vals));
+		Graff = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
+		Graff.setBounciness(1.0f);
+		Graffiti.setPhysicsObject(Graff);
+		
+		translation = new Matrix4f(SecurityGaurd.getLocalTranslation());
+		tempTransform = toDoubleArray(translation.get(vals));
+		Gaurd = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
+		Gaurd.setBounciness(1.0f);
+		SecurityGaurd.setPhysicsObject(Gaurd);
+
+        translation = new Matrix4f(Janitor.getLocalTranslation());
+		tempTransform = toDoubleArray(translation.get(vals));
+		Jani = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
+		Jani.setBounciness(1.0f);
+		Janitor.setPhysicsObject(Jani);
+		
+		translation = new Matrix4f(ground.getLocalTranslation());
+		tempTransform = toDoubleArray(translation.get(vals));
+		groundPlaneP = physicsEngine.addStaticPlaneObject(physicsEngine.nextUID(), tempTransform, up, 0.0f);
+		groundPlaneP.setBounciness(1.0f);
+		ground.setPhysicsObject(groundPlaneP);
     }
     /**
      *creating the viewports 
@@ -471,6 +513,20 @@ public class MyGame extends VariableFrameRateGame{
         currentTime = System.currentTimeMillis();
         elaspedTime = System.currentTimeMillis() - previousTime;
         previousTime = System.currentTimeMillis();
+
+        if (running)
+		{	Matrix4f mat = new Matrix4f();
+			Matrix4f mat2 = new Matrix4f().identity();
+			checkForCollisions();
+			physicsEngine.update((float)elaspedTime);
+			for (GameObject go:engine.getSceneGraph().getGameObjects())
+			{	if (go.getPhysicsObject() != null)
+				{	mat.set(toFloatArray(go.getPhysicsObject().getTransform()));
+					mat2.set(3,0,mat.m30()); mat2.set(3,1,mat.m31()); mat2.set(3,2,mat.m32());
+					go.setLocalTranslation(mat2);
+				}
+			}
+		}
 		if(currentTime - elaspedTime < previousTime){
 		    int elapsTimeSec = Math.round((float)(System.currentTimeMillis()-startTime)/1000.0f);
             String elapsTimeStr = Integer.toString(elapsTimeSec);
@@ -618,5 +674,51 @@ public class MyGame extends VariableFrameRateGame{
 			{	protocolClient.sendByeMessage();
 			}
 		}
+	}
+    private void checkForCollisions()
+	{	com.bulletphysics.dynamics.DynamicsWorld dynamicsWorld;
+		com.bulletphysics.collision.broadphase.Dispatcher dispatcher;
+		com.bulletphysics.collision.narrowphase.PersistentManifold manifold;
+		com.bulletphysics.dynamics.RigidBody object1, object2;
+		com.bulletphysics.collision.narrowphase.ManifoldPoint contactPoint;
+
+		dynamicsWorld = ((JBulletPhysicsEngine)physicsEngine).getDynamicsWorld();
+		dispatcher = dynamicsWorld.getDispatcher();
+		int manifoldCount = dispatcher.getNumManifolds();
+		for (int i=0; i<manifoldCount; i++)
+		{	manifold = dispatcher.getManifoldByIndexInternal(i);
+			object1 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody0();
+			object2 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody1();
+			JBulletPhysicsObject obj1 = JBulletPhysicsObject.getJBulletPhysicsObject(object1);
+			JBulletPhysicsObject obj2 = JBulletPhysicsObject.getJBulletPhysicsObject(object2);
+			for (int j = 0; j < manifold.getNumContacts(); j++)
+			{	contactPoint = manifold.getContactPoint(j);
+				if (contactPoint.getDistance() < 0.0f)
+				{	System.out.println("---- hit between " + obj1 + " and " + obj2);
+					break;
+				}
+			}
+		}
+	}
+    	// ------------------ UTILITY FUNCTIONS used by physics
+
+	private float[] toFloatArray(double[] arr)
+	{	if (arr == null) return null;
+		int n = arr.length;
+		float[] ret = new float[n];
+		for (int i = 0; i < n; i++)
+		{	ret[i] = (float)arr[i];
+		}
+		return ret;
+	}
+ 
+	private double[] toDoubleArray(float[] arr)
+	{	if (arr == null) return null;
+		int n = arr.length;
+		double[] ret = new double[n];
+		for (int i = 0; i < n; i++)
+		{	ret[i] = (double)arr[i];
+		}
+		return ret;
 	}
 }
