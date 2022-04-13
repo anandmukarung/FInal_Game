@@ -15,6 +15,13 @@ import java.io.*;
 import javax.swing.*;
 import org.joml.*;
 
+
+import tage.physics.PhysicsEngine;
+import tage.physics.PhysicsObject;
+import tage.physics.PhysicsEngineFactory;
+import tage.physics.JBullet.*;
+import com.bulletphysics.dynamics.RigidBody;
+import com.bulletphysics.collision.dispatch.CollisionObject;
 import java.io.*;
 import java.util.*;
 import java.util.UUID;
@@ -128,6 +135,14 @@ public class MyGame extends VariableFrameRateGame{
     private ObjShape ghostShape;
     private TextureImage ghostTexture; 
 
+    private GameObject Janitor;
+    private ObjShape janitorShape;
+    private TextureImage janitorImage;
+
+    private GameObject SecurityGaurd;
+    private ObjShape secuirtyGaurdShape;
+    private TextureImage secuirtyImage;
+
     private String serverAddress;
     private int serverPort;
     private ProtocolType serverProtocol;
@@ -178,6 +193,8 @@ public class MyGame extends VariableFrameRateGame{
         buildingShape = new Cube();
         garbageFenceShape = new Cube();
         cityShape = new ImportedModel("city.obj");
+        janitorShape = new ImportedModel("Janitor.obj");
+        secuirtyGaurdShape = new ImportedModel("Secuirty_Gaurd.obj");
 	}
     /**
      * loads all the textures into the texture variables
@@ -194,6 +211,8 @@ public class MyGame extends VariableFrameRateGame{
         buildingTexture = new TextureImage("street.png");
         garbageFenceTexure = new TextureImage("garbageFence.png");
         cityTexture = new TextureImage("city.png");
+        secuirtyImage = new TextureImage("guard.png");
+        janitorImage = new TextureImage("janitor.png");
     }
     /**
      * builds the objects in the game 
@@ -217,6 +236,19 @@ public class MyGame extends VariableFrameRateGame{
         initalScale = (new Matrix4f()).scaling(10.2f);
         streetlight.setLocalTranslation(initialTranslation);
         streetlight.setLocalScale(initalScale);
+
+        Janitor = new GameObject(GameObject.root(),janitorShape, janitorImage);
+        initialTranslation = (new Matrix4f().translation(10,10,20));
+        initalScale = (new Matrix4f()).scaling(10.2f);
+        streetlight.setLocalTranslation(initialTranslation);
+        streetlight.setLocalScale(initalScale);
+
+        SecurityGaurd = new GameObject(GameObject.root(),secuirtyGaurdShape, secuirtyImage);
+        initialTranslation = (new Matrix4f().translation(0,0,10));
+        initalScale = (new Matrix4f()).scaling(10.2f);
+        streetlight.setLocalTranslation(initialTranslation);
+        streetlight.setLocalScale(initalScale);
+
 
         ground = new GameObject(GameObject.root(), groundPlane, groundTexture);
         initialTranslation = (new Matrix4f().translation(0,0,0));
@@ -285,6 +317,12 @@ public class MyGame extends VariableFrameRateGame{
         Graffiti.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("dolphinTranslate"))));
         //use these as templates for init
         Graffiti.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("dolphinScale"))).floatValue()));
+
+        SecurityGaurd.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("GaurdTranslate"))));
+        SecurityGaurd.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("GaurdScale"))).floatValue()));
+
+        Janitor.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("JanitorTranslate"))));
+        Janitor.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("JanitorScale"))).floatValue()));
 
         streetlight.setLocalTranslation(new Matrix4f().translation((Vector3fc) (jsEngine.get("streetlightTranslate"))));
         streetlight.setLocalScale(new Matrix4f().scaling(((Double)(jsEngine.get("streetlightScale"))).floatValue()));
