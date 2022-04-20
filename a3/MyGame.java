@@ -3,6 +3,7 @@ package a3;
 import tage.*;
 import tage.input.InputManager;
 import tage.input.action.AbstractInputAction;
+import tage.input.action.IAction;
 import tage.shapes.*;
 import tage.nodeControllers.*;
 
@@ -394,6 +395,7 @@ public class MyGame extends VariableFrameRateGame{
         InvisibleAxis invisibleAxis = new InvisibleAxis(this);
         ViewPort viewPort1 = new ViewPort(this, 'u'); 
         ViewPort viewPort2 = new ViewPort(this, 'd');
+        Jump jump = new Jump(this);
         ArrayList<net.java.games.input.Controller> controllers = inputManager.getControllers();
         for (net.java.games.input.Controller gp : controllers){
             if (gp.getType() == net.java.games.input.Controller.Type.GAMEPAD){
@@ -442,6 +444,9 @@ public class MyGame extends VariableFrameRateGame{
                 inputManager.associateAction(kb,
                     net.java.games.input.Component.Identifier.Key.C,
                     viewPort2, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+                inputManager.associateAction(kb,
+                    net.java.games.input.Component.Identifier.Key.SPACE,
+                    jump, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
             }
         }
         setupNetworking();
@@ -721,4 +726,7 @@ public class MyGame extends VariableFrameRateGame{
 		}
 		return ret;
 	}
+    public void jump(){
+        running = !running;
+    }
 }
