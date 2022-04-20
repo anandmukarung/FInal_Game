@@ -14,6 +14,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import javax.swing.*;
+import javax.vecmath.Color3b;
+
 import org.joml.*;
 
 
@@ -80,6 +82,17 @@ public class MyGame extends VariableFrameRateGame{
     private GameObject xAxsis;
     private GameObject yAxsis;
     private GameObject zAxsis;
+
+    private GameObject waterFling;
+    private GameObject waterPuddle1;
+    private GameObject waterPuddle2;
+    private GameObject waterPuddle3;
+    private GameObject waterPuddle4;
+    private GameObject waterPuddle5;
+
+    private ObjShape water;
+
+    private TextureImage waterImage;
     
     private GameObject terr;
     private ObjShape terrShape;
@@ -99,7 +112,7 @@ public class MyGame extends VariableFrameRateGame{
 
     private InputManager inputManager;
 
-    private float speed = 0.0f;
+    private float speed = 2.0f;
     private float zoomPan = 0.0f;
 	private NodeController rc;
 
@@ -151,11 +164,15 @@ public class MyGame extends VariableFrameRateGame{
     private boolean isClientConnected = false;
 
     private PhysicsEngine physicsEngine;
-    private PhysicsObject Graff;
-    private PhysicsObject Jani;
-    private PhysicsObject Gaurd;
+
+    private PhysicsObject waterP1;
+    private PhysicsObject waterP2;
+    private PhysicsObject waterP3;
+    private PhysicsObject waterP4;
+    private PhysicsObject waterP5;
+    
     private PhysicsObject groundPlaneP;
-    private boolean running = false;
+    private boolean running = true;
     private float vals[] = new float [16];
 
 	private long fileLastModifiedTime = 0;
@@ -198,6 +215,7 @@ public class MyGame extends VariableFrameRateGame{
         xAxsisShape = new Line(center, xBorder);
         yAxsisShape = new Line(center, yBorder);
         zAxsisShape = new Line(center, zBorder);
+        water = new Sphere();
         groundPlane = new Plane();
         buildingShape = new Cube();
         garbageFenceShape = new Cube();
@@ -222,6 +240,7 @@ public class MyGame extends VariableFrameRateGame{
         cityTexture = new TextureImage("city.png");
         secuirtyImage = new TextureImage("guard.png");
         janitorImage = new TextureImage("janitor.png");
+        waterImage = new TextureImage("water.png");
     }
     /**
      * builds the objects in the game 
@@ -232,6 +251,13 @@ public class MyGame extends VariableFrameRateGame{
 	public void buildObjects(){
 
 		Matrix4f initialTranslation, initalScale;
+
+        waterFling = new GameObject(GameObject.root(), water, waterImage);
+        waterPuddle1 = new GameObject(GameObject.root(), water, waterImage);
+        waterPuddle2 = new GameObject(GameObject.root(), water, waterImage);
+        waterPuddle3 = new GameObject(GameObject.root(), water, waterImage);
+        waterPuddle4 = new GameObject(GameObject.root(), water, waterImage);
+        waterPuddle5 = new GameObject(GameObject.root(), water, waterImage);
 
         Graffiti = new GameObject(GameObject.root(), graffitiShape, GrafTexture);
         initialTranslation = (new Matrix4f().translation(0,0,0));
@@ -464,21 +490,25 @@ public class MyGame extends VariableFrameRateGame{
 		
 		Matrix4f translation = new Matrix4f(Graffiti.getLocalTranslation());
 		tempTransform = toDoubleArray(translation.get(vals));
-		Graff = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
-		Graff.setBounciness(1.0f);
-		Graffiti.setPhysicsObject(Graff);
+		waterP1 = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
+		waterP1.setBounciness(1.0f);
+		waterPuddle1.setPhysicsObject(waterP1);
 		
-		translation = new Matrix4f(SecurityGaurd.getLocalTranslation());
-		tempTransform = toDoubleArray(translation.get(vals));
-		Gaurd = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
-		Gaurd.setBounciness(1.0f);
-		SecurityGaurd.setPhysicsObject(Gaurd);
+		waterP2 = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
+		waterP2.setBounciness(1.0f);
+		waterPuddle2.setPhysicsObject(waterP2);
 
-        translation = new Matrix4f(Janitor.getLocalTranslation());
-		tempTransform = toDoubleArray(translation.get(vals));
-		Jani = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
-		Jani.setBounciness(1.0f);
-		Janitor.setPhysicsObject(Jani);
+        waterP3 = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
+		waterP3.setBounciness(1.0f);
+		waterPuddle3.setPhysicsObject(waterP3);
+
+        waterP4 = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
+		waterP4.setBounciness(1.0f);
+		waterPuddle4.setPhysicsObject(waterP4);
+
+        waterP5 = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
+		waterP5.setBounciness(1.0f);
+		waterPuddle5.setPhysicsObject(waterP5);
 		
 		translation = new Matrix4f(ground.getLocalTranslation());
 		tempTransform = toDoubleArray(translation.get(vals));
@@ -700,6 +730,9 @@ public class MyGame extends VariableFrameRateGame{
 			{	contactPoint = manifold.getContactPoint(j);
 				if (contactPoint.getDistance() < 0.0f)
 				{	System.out.println("---- hit between " + obj1 + " and " + obj2);
+                    if(obj1.getJBulletPhysicsObject(object1).equals(groundPlaneP) && obj2.getJBulletPhysicsObject(object1).equals(waterP1)){
+                        System.out.println("asdf");
+                    }        
 					break;
 				}
 			}
@@ -727,6 +760,10 @@ public class MyGame extends VariableFrameRateGame{
 		return ret;
 	}
     public void jump(){
-        running = !running;
+        waterPuddle1.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
+        waterPuddle2.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
+        waterPuddle3.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
+        waterPuddle4.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
+        waterPuddle5.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
     }
 }
