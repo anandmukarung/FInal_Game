@@ -171,6 +171,10 @@ public class MyGame extends VariableFrameRateGame{
     private PhysicsObject waterP4;
     private PhysicsObject waterP5;
 
+    private PhysicsObject GraffitiP;
+    private PhysicsObject SecuirtyGuardP;
+    private PhysicsObject JanitorP;
+
     private int waterSwitcher = 1;
     
     private PhysicsObject groundPlaneP;
@@ -511,7 +515,19 @@ public class MyGame extends VariableFrameRateGame{
         waterP5 = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
 		waterP5.setBounciness(5.0f);
 		waterPuddle5.setPhysicsObject(waterP5);
+        /*
+        GraffitiP = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
+        GraffitiP.setBounciness(0);
+        Graffiti.setPhysicsObject(GraffitiP);
 		
+        SecuirtyGuardP = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
+        SecuirtyGuardP.setBounciness(0);
+        SecurityGaurd.setPhysicsObject(SecuirtyGuardP);
+
+        JanitorP  = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
+        JanitorP.setBounciness(0);
+        Janitor.setPhysicsObject(JanitorP);
+        */
 		translation = new Matrix4f(ground.getLocalTranslation());
 		tempTransform = toDoubleArray(translation.get(vals));
 		groundPlaneP = physicsEngine.addStaticPlaneObject(physicsEngine.nextUID(), tempTransform, up, 0.0f);
@@ -551,16 +567,23 @@ public class MyGame extends VariableFrameRateGame{
         elaspedTime = System.currentTimeMillis() - previousTime;
         previousTime = System.currentTimeMillis();
 
-        if (running)
-		{	Matrix4f mat = new Matrix4f();
+        if (running){
+            Matrix4f mat = new Matrix4f();
 			Matrix4f mat2 = new Matrix4f().identity();
 			checkForCollisions();
 			physicsEngine.update((float)elaspedTime);
-			for (GameObject go:engine.getSceneGraph().getGameObjects())
-			{	if (go.getPhysicsObject() != null)
-				{	mat.set(toFloatArray(go.getPhysicsObject().getTransform()));
-					mat2.set(3,0,mat.m30()); mat2.set(3,1,mat.m31()); mat2.set(3,2,mat.m32());
-					go.setLocalTranslation(mat2);
+			for (GameObject go:engine.getSceneGraph().getGameObjects()){
+                if (go.getPhysicsObject() != null){	
+                    if(go.getPhysicsObject() == waterP1){
+                        mat.set(toFloatArray(waterPuddle1.getPhysicsObject().getTransform()));
+					    mat2.set(3,0,mat.m30()); mat2.set(3,1,mat.m31()); mat2.set(3,2,mat.m32());
+					    go.setLocalTranslation(mat2);
+                    }
+                    else{
+                        mat.set(toFloatArray(go.getPhysicsObject().getTransform()));
+					    mat2.set(3,0,mat.m30()); mat2.set(3,1,mat.m31()); mat2.set(3,2,mat.m32());
+					    go.setLocalTranslation(mat2);
+                    }
 				}
 			}
 		}
@@ -803,10 +826,12 @@ public class MyGame extends VariableFrameRateGame{
         float locationZ = Graffiti.getLocalLocation().z; 
         if(waterSwitcher == 1){
             waterPuddle1.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
+            waterP1.applyTorque(locationX, locationY, locationZ);
             waterP1.applyForce(10, 0, 0, locationX, locationY, locationZ);
         }
         else if(waterSwitcher == 2){
             waterPuddle2.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
+            
             waterP2.applyForce(10, 0, 0, locationX, locationY, locationZ);
         }
         else if(waterSwitcher == 3){
