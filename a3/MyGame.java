@@ -170,6 +170,8 @@ public class MyGame extends VariableFrameRateGame{
     private PhysicsObject waterP3;
     private PhysicsObject waterP4;
     private PhysicsObject waterP5;
+
+    private int waterSwitcher = 1;
     
     private PhysicsObject groundPlaneP;
     private boolean running = true;
@@ -495,19 +497,19 @@ public class MyGame extends VariableFrameRateGame{
 		waterPuddle1.setPhysicsObject(waterP1);
 		
 		waterP2 = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
-		waterP2.setBounciness(1.0f);
+		waterP2.setBounciness(2.0f);
 		waterPuddle2.setPhysicsObject(waterP2);
 
         waterP3 = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
-		waterP3.setBounciness(1.0f);
+		waterP3.setBounciness(3.0f);
 		waterPuddle3.setPhysicsObject(waterP3);
 
         waterP4 = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
-		waterP4.setBounciness(1.0f);
+		waterP4.setBounciness(4.0f);
 		waterPuddle4.setPhysicsObject(waterP4);
 
         waterP5 = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
-		waterP5.setBounciness(1.0f);
+		waterP5.setBounciness(5.0f);
 		waterPuddle5.setPhysicsObject(waterP5);
 		
 		translation = new Matrix4f(ground.getLocalTranslation());
@@ -576,6 +578,33 @@ public class MyGame extends VariableFrameRateGame{
             HudCamera.setLocation(hudCameraVector);
             inputManager.update((float)elaspedTime);
             processNetworking((float)elaspedTime);
+            if(terrainCollision(terr, Graffiti)){
+                Vector3f loc = Graffiti.getWorldLocation();
+		        float height = terr.getHeight(loc.x(), loc.z());
+		        Graffiti.setLocalLocation(new Vector3f(loc.x(), height, loc.z()));
+            }
+            if(terrainCollision(terr, Janitor)){
+                Vector3f loc = Janitor.getWorldLocation();
+		        float height = terr.getHeight(loc.x(), loc.z());
+		        Janitor.setLocalLocation(new Vector3f(loc.x(), height, loc.z()));
+            }
+            if(terrainCollision(terr, SecurityGaurd)){
+                Vector3f loc = SecurityGaurd.getWorldLocation();
+		        float height = terr.getHeight(loc.x(), loc.z());
+		        SecurityGaurd.setLocalLocation(new Vector3f(loc.x(), height, loc.z()));
+            }
+            if(!terrainCollision(terr, Graffiti)){
+                Vector3f loc = Graffiti.getWorldLocation();
+                Graffiti.setLocalLocation(new Vector3f(loc.x(), 7 , loc.z()));
+            }
+            if(!terrainCollision(terr, Janitor)){
+                Vector3f loc = Janitor.getWorldLocation();
+                Janitor.setLocalLocation(new Vector3f(loc.x(), 7 , loc.z()));
+            }
+            if(!terrainCollision(terr, SecurityGaurd)){
+                Vector3f loc = SecurityGaurd.getWorldLocation();
+                SecurityGaurd.setLocalLocation(new Vector3f(loc.x(), 7 , loc.z()));
+            }
         }
         previousTime = System.currentTimeMillis();
 	}
@@ -691,7 +720,15 @@ public class MyGame extends VariableFrameRateGame{
 			protocolClient.sendJoinMessage();
 		}
 	}
-	
+	private boolean terrainCollision(GameObject terr, GameObject player){
+        float terrX = terr.getWorldLocation().x();
+        float terrZ = terr.getWorldLocation().z();
+        if(Math.abs(player.getWorldLocation().x() - terrX)< 1.5f && 
+            Math.abs(player.getWorldLocation().z()- terrZ) < 1.5f){
+                return true;
+        }
+        return false;
+    }
 	protected void processNetworking(float elapsTime)
 	{	// Process packets received by the client from the server
 		if (protocolClient != null)
@@ -759,11 +796,32 @@ public class MyGame extends VariableFrameRateGame{
 		}
 		return ret;
 	}
-    public void jump(){
-        waterPuddle1.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
-        waterPuddle2.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
-        waterPuddle3.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
-        waterPuddle4.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
-        waterPuddle5.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
+    public void flingWater(){
+        //to change to janitor
+        float locationX = Graffiti.getLocalLocation().x;
+        float locationY = Graffiti.getLocalLocation().y;
+        float locationZ = Graffiti.getLocalLocation().z; 
+        if(waterSwitcher == 1){
+            waterPuddle1.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
+            waterP1.applyForce(10, 0, 0, locationX, locationY, locationZ);
+        }
+        else if(waterSwitcher == 2){
+            waterPuddle2.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
+            waterP2.applyForce(10, 0, 0, locationX, locationY, locationZ);
+        }
+        else if(waterSwitcher == 3){
+            waterPuddle3.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
+            waterP4.applyForce(10, 0, 0, locationX, locationY, locationZ);
+        }
+        else if(waterSwitcher == 4){
+            waterPuddle4.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
+            waterP4.applyForce(10, 0, 0, locationX, locationY, locationZ);
+        }
+        else if(waterSwitcher == 5){
+            waterPuddle5.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
+            waterP5.applyForce(10, 0, 0, locationX, locationY, locationZ);
+            waterSwitcher = 1;
+        }
+        waterSwitcher++;
     }
 }
