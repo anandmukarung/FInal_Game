@@ -789,7 +789,7 @@ public class MyGame extends VariableFrameRateGame{
 			for (int j = 0; j < manifold.getNumContacts(); j++)
 			{	contactPoint = manifold.getContactPoint(j);
 				if (contactPoint.getDistance() < 0.0f)
-				{	System.out.println("---- hit between " + obj1 + " and " + obj2);
+				{	//System.out.println("---- hit between " + obj1 + " and " + obj2);
                     if(obj1.getJBulletPhysicsObject(object1).equals(groundPlaneP) && obj2.getJBulletPhysicsObject(object1).equals(waterP1)){
                         System.out.println("asdf");
                     }        
