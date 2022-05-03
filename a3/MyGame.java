@@ -6,6 +6,8 @@ import tage.input.action.AbstractInputAction;
 import tage.input.action.IAction;
 import tage.shapes.*;
 import tage.nodeControllers.*;
+import tage.audio.*;
+import com.jogamp.openal.ALFactory;
 
 import java.lang.Math;
 import java.lang.ModuleLayer.Controller;
@@ -14,7 +16,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import javax.swing.*;
-import javax.vecmath.Color3b;
 
 import org.joml.*;
 
@@ -124,7 +125,7 @@ public class MyGame extends VariableFrameRateGame{
 
     private TextureImage GrafTexture;
     private GameObject Graffiti;
-    private ObjShape graffitiShape;
+    private AnimatedShape graffitiShape;
 
     private TextureImage streetlightTexture;
     private GameObject streetlight;
@@ -187,6 +188,10 @@ public class MyGame extends VariableFrameRateGame{
 
     private Matrix4f behindPlayer = (new Matrix4f()).scaling(0.2f);
 
+
+	private IAudioManager audioMgr;
+	private Sound BGM, OkGaurd;
+
 	public MyGame(String serverAddress, int serverPort, String protocol) { 
         super(); 
         ghostManager = new GhostManager(this);
@@ -214,7 +219,9 @@ public class MyGame extends VariableFrameRateGame{
      */
 	@Override
 	public void loadShapes(){
-        graffitiShape = new ImportedModel("graffiti_artist.obj");
+        graffitiShape = new AnimatedShape("graffiti_artist.rkm","graffiti_artist.rks");
+        graffitiShape.loadAnimation("WALK", "graffiti_artist_Walk.rka");
+        graffitiShape.loadAnimation("KICK", "graffiti_artist._Kick.rka"); 
         ghostShape = new ImportedModel("graffiti_artist.obj");
         hills = new TextureImage("hills.jpg");
         streetlightShape = new ImportedModel("streetlight.obj");
@@ -340,6 +347,40 @@ public class MyGame extends VariableFrameRateGame{
 		(engine.getSceneGraph()).setActiveSkyBoxTexture(fluffyClouds);
 		(engine.getSceneGraph()).setSkyBoxEnabled(true);
     }
+
+    public void initAudio()
+	{	AudioResource resource1, resource2;
+		audioMgr = AudioManagerFactory.createAudioManager("tage.audio.joal.JOALAudioManager");
+		if (!audioMgr.initialize())
+		{	System.out.println("Audio Manager failed to initialize!");
+			return;
+		}
+		resource1 = audioMgr.createAudioResource("assets/sounds/GuardOk.wav", AudioResourceType.AUDIO_SAMPLE);
+		resource2 = audioMgr.createAudioResource("assets/sounds/Otherthere.wav", AudioResourceType.AUDIO_SAMPLE);
+		OkGaurd = new Sound(resource1, SoundType.SOUND_EFFECT, 100, true);
+		BGM = new Sound(resource2, SoundType.SOUND_EFFECT, 100, true);
+		OkGaurd.initialize(audioMgr);
+		BGM.initialize(audioMgr);
+		OkGaurd.setMaxDistance(10.0f);
+		OkGaurd.setMinDistance(0.5f);
+		OkGaurd.setRollOff(5.0f);
+		BGM.setMaxDistance(10.0f);
+		BGM.setMinDistance(0.5f);
+		BGM.setRollOff(5.0f);
+		
+		OkGaurd.setLocation(SecurityGaurd.getWorldLocation());
+		BGM.setLocation(city.getWorldLocation());
+		setEarParameters();
+
+		OkGaurd.play();
+		BGM.play();
+	}
+
+    public void setEarParameters()
+	{	Camera camera = (engine.getRenderSystem()).getViewport("LEFT").getCamera();
+		audioMgr.getEar().setLocation(Graffiti.getWorldLocation());
+		audioMgr.getEar().setOrientation(camera.getN(), new Vector3f(0.0f, 1.0f, 0.0f));
+	}
     /**
      * initlizes the games objects and inputs
      */
@@ -481,58 +522,9 @@ public class MyGame extends VariableFrameRateGame{
                     jump, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
             }
         }
+        initAudio();
         setupNetworking();
         orbit = new CameraOrbit3D(camera, Graffiti, engine, this);
-
-        String engine = "tage.physics.JBullet.JBulletPhysicsEngine";
-		float[] gravity = {0f, -5f, 0f};
-		physicsEngine = PhysicsEngineFactory.createPhysicsEngine(engine);
-		physicsEngine.initSystem();
-		physicsEngine.setGravity(gravity);
-
-        float mass = 1.0f;
-		float up[] = {0,1,0};
-		double[] tempTransform;
-		
-		Matrix4f translation = new Matrix4f(Graffiti.getLocalTranslation());
-		tempTransform = toDoubleArray(translation.get(vals));
-		waterP1 = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
-		waterP1.setBounciness(1.0f);
-		waterPuddle1.setPhysicsObject(waterP1);
-		
-		waterP2 = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
-		waterP2.setBounciness(2.0f);
-		waterPuddle2.setPhysicsObject(waterP2);
-
-        waterP3 = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
-		waterP3.setBounciness(3.0f);
-		waterPuddle3.setPhysicsObject(waterP3);
-
-        waterP4 = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
-		waterP4.setBounciness(4.0f);
-		waterPuddle4.setPhysicsObject(waterP4);
-
-        waterP5 = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
-		waterP5.setBounciness(5.0f);
-		waterPuddle5.setPhysicsObject(waterP5);
-        /*
-        GraffitiP = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
-        GraffitiP.setBounciness(0);
-        Graffiti.setPhysicsObject(GraffitiP);
-		
-        SecuirtyGuardP = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
-        SecuirtyGuardP.setBounciness(0);
-        SecurityGaurd.setPhysicsObject(SecuirtyGuardP);
-
-        JanitorP  = physicsEngine.addSphereObject(physicsEngine.nextUID(), mass, tempTransform, 0.75f);
-        JanitorP.setBounciness(0);
-        Janitor.setPhysicsObject(JanitorP);
-        */
-		translation = new Matrix4f(ground.getLocalTranslation());
-		tempTransform = toDoubleArray(translation.get(vals));
-		groundPlaneP = physicsEngine.addStaticPlaneObject(physicsEngine.nextUID(), tempTransform, up, 0.0f);
-		groundPlaneP.setBounciness(1.0f);
-		ground.setPhysicsObject(groundPlaneP);
     }
     /**
      *creating the viewports 
@@ -566,27 +558,6 @@ public class MyGame extends VariableFrameRateGame{
         currentTime = System.currentTimeMillis();
         elaspedTime = System.currentTimeMillis() - previousTime;
         previousTime = System.currentTimeMillis();
-
-        if (running){
-            Matrix4f mat = new Matrix4f();
-			Matrix4f mat2 = new Matrix4f().identity();
-			checkForCollisions();
-			physicsEngine.update((float)elaspedTime);
-			for (GameObject go:engine.getSceneGraph().getGameObjects()){
-                if (go.getPhysicsObject() != null){	
-                    if(go.getPhysicsObject() == waterP1){
-                        mat.set(toFloatArray(waterPuddle1.getPhysicsObject().getTransform()));
-					    mat2.set(3,0,mat.m30()); mat2.set(3,1,mat.m31()); mat2.set(3,2,mat.m32());
-					    go.setLocalTranslation(mat2);
-                    }
-                    else{
-                        mat.set(toFloatArray(go.getPhysicsObject().getTransform()));
-					    mat2.set(3,0,mat.m30()); mat2.set(3,1,mat.m31()); mat2.set(3,2,mat.m32());
-					    go.setLocalTranslation(mat2);
-                    }
-				}
-			}
-		}
 		if(currentTime - elaspedTime < previousTime){
 		    int elapsTimeSec = Math.round((float)(System.currentTimeMillis()-startTime)/1000.0f);
             String elapsTimeStr = Integer.toString(elapsTimeSec);
@@ -630,6 +601,10 @@ public class MyGame extends VariableFrameRateGame{
             }
         }
         previousTime = System.currentTimeMillis();
+        OkGaurd.setLocation(SecurityGaurd.getWorldLocation()); 
+        BGM.setLocation(city.getWorldLocation()); 
+        setEarParameters(); 
+        graffitiShape.updateAnimation();
 	}
     /**
      * zoomPan method for controller
@@ -680,6 +655,9 @@ public class MyGame extends VariableFrameRateGame{
      */
     public GameObject getPlayer(){
         return Graffiti;
+    }
+    public AnimatedShape getPlayerShape(){
+        return graffitiShape;
     }
     /**
      * gets Game Camera and returns it
@@ -770,83 +748,4 @@ public class MyGame extends VariableFrameRateGame{
 			}
 		}
 	}
-    private void checkForCollisions()
-	{	com.bulletphysics.dynamics.DynamicsWorld dynamicsWorld;
-		com.bulletphysics.collision.broadphase.Dispatcher dispatcher;
-		com.bulletphysics.collision.narrowphase.PersistentManifold manifold;
-		com.bulletphysics.dynamics.RigidBody object1, object2;
-		com.bulletphysics.collision.narrowphase.ManifoldPoint contactPoint;
-
-		dynamicsWorld = ((JBulletPhysicsEngine)physicsEngine).getDynamicsWorld();
-		dispatcher = dynamicsWorld.getDispatcher();
-		int manifoldCount = dispatcher.getNumManifolds();
-		for (int i=0; i<manifoldCount; i++)
-		{	manifold = dispatcher.getManifoldByIndexInternal(i);
-			object1 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody0();
-			object2 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody1();
-			JBulletPhysicsObject obj1 = JBulletPhysicsObject.getJBulletPhysicsObject(object1);
-			JBulletPhysicsObject obj2 = JBulletPhysicsObject.getJBulletPhysicsObject(object2);
-			for (int j = 0; j < manifold.getNumContacts(); j++)
-			{	contactPoint = manifold.getContactPoint(j);
-				if (contactPoint.getDistance() < 0.0f)
-				{	//System.out.println("---- hit between " + obj1 + " and " + obj2);
-                    if(obj1.getJBulletPhysicsObject(object1).equals(groundPlaneP) && obj2.getJBulletPhysicsObject(object1).equals(waterP1)){
-                        System.out.println("asdf");
-                    }        
-					break;
-				}
-			}
-		}
-	}
-    	// ------------------ UTILITY FUNCTIONS used by physics
-
-	private float[] toFloatArray(double[] arr)
-	{	if (arr == null) return null;
-		int n = arr.length;
-		float[] ret = new float[n];
-		for (int i = 0; i < n; i++)
-		{	ret[i] = (float)arr[i];
-		}
-		return ret;
-	}
- 
-	private double[] toDoubleArray(float[] arr)
-	{	if (arr == null) return null;
-		int n = arr.length;
-		double[] ret = new double[n];
-		for (int i = 0; i < n; i++)
-		{	ret[i] = (double)arr[i];
-		}
-		return ret;
-	}
-    public void flingWater(){
-        //to change to janitor
-        float locationX = Graffiti.getLocalLocation().x;
-        float locationY = Graffiti.getLocalLocation().y;
-        float locationZ = Graffiti.getLocalLocation().z; 
-        if(waterSwitcher == 1){
-            waterPuddle1.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
-            waterP1.applyTorque(locationX, locationY, locationZ);
-            waterP1.applyForce(10, 0, 0, locationX, locationY, locationZ);
-        }
-        else if(waterSwitcher == 2){
-            waterPuddle2.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
-            
-            waterP2.applyForce(10, 0, 0, locationX, locationY, locationZ);
-        }
-        else if(waterSwitcher == 3){
-            waterPuddle3.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
-            waterP4.applyForce(10, 0, 0, locationX, locationY, locationZ);
-        }
-        else if(waterSwitcher == 4){
-            waterPuddle4.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
-            waterP4.applyForce(10, 0, 0, locationX, locationY, locationZ);
-        }
-        else if(waterSwitcher == 5){
-            waterPuddle5.setLocalTranslation((new Matrix4f().translate(Graffiti.getLocalLocation())));
-            waterP5.applyForce(10, 0, 0, locationX, locationY, locationZ);
-            waterSwitcher = 1;
-        }
-        waterSwitcher++;
-    }
 }

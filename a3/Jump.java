@@ -22,6 +22,6 @@ public class Jump extends AbstractInputAction{
 	 */
 	@Override
 	public void performAction(float time, Event e){	
-    	game.flingWater();
+    	//game.flingWater();
 	}
 }
