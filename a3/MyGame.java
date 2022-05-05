@@ -355,15 +355,15 @@ public class MyGame extends VariableFrameRateGame{
 		{	System.out.println("Audio Manager failed to initialize!");
 			return;
 		}
-		resource1 = audioMgr.createAudioResource("assets/sounds/GuardOk.wav", AudioResourceType.AUDIO_SAMPLE);
+		resource1 = audioMgr.createAudioResource("assets/sounds/Guard.wav", AudioResourceType.AUDIO_SAMPLE);
 		resource2 = audioMgr.createAudioResource("assets/sounds/Otherthere.wav", AudioResourceType.AUDIO_SAMPLE);
-		OkGaurd = new Sound(resource1, SoundType.SOUND_EFFECT, 100, true);
-		BGM = new Sound(resource2, SoundType.SOUND_EFFECT, 100, true);
+		OkGaurd = new Sound(resource1, SoundType.SOUND_EFFECT, 0, true);
+		BGM = new Sound(resource2, SoundType.SOUND_EFFECT, 0, true);
 		OkGaurd.initialize(audioMgr);
 		BGM.initialize(audioMgr);
-		OkGaurd.setMaxDistance(10.0f);
+		OkGaurd.setMaxDistance(1.0f);
 		OkGaurd.setMinDistance(0.5f);
-		OkGaurd.setRollOff(5.0f);
+		OkGaurd.setRollOff(0.3f);
 		BGM.setMaxDistance(10.0f);
 		BGM.setMinDistance(0.5f);
 		BGM.setRollOff(5.0f);
